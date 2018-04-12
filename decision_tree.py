@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2.7
 # Nick Rocco and Ryan Loizzo
 # Analysis of Fourth Downs in College Football
 # Machine Learning Final Project
@@ -8,7 +8,8 @@ import os
 import string
 import math
 import operator
-import graphviz
+from sklearn import tree
+import pandas as pd
 
 def entropy(data):
     
@@ -39,7 +40,13 @@ def entropy(data):
 if __name__ == '__main__':
     filenames = ['punt.csv', 'field_goals.csv', 'off_plays.csv']
     
+    #data = [["Field_Pos","Yds_to_Gain","Time_Rem","Score_Diff","Pts_Next_Poss","Class"]]
     data = []
+
+
+    relevant_stats = set([1,2,5,7,8,9])
+
+    quarters = [0]
 
     for item in filenames:
         with open(item) as f:
@@ -51,14 +58,48 @@ if __name__ == '__main__':
                     line += ',2'
                 elif item == 'off_plays.csv':
                     line += ',3'
-                l = [x.strip() for x in line.split(',')]
+                l = []
+                line = line.split(',')
+                quarters.append(float(line[4]))
+                for i in range(len(line)):
+                    if i in relevant_stats:
+                        if i != 5:
+                            l.append(float(line[i].strip()))
+                        else:
+                            l.append(line[i].strip())
                 data.append(l)
 
-    testing_data = []
+    for i in range(len(data)):
+        line = data[i]
+        quarter = quarters[i]
+        # convert field position to distance from endzone
+        if line[1] < 0:
+            line[1] = float(abs(line[1]) + 50)
+        # convert time to decimal as opposed to mm:ss
+        time = line[2]
+        minutes = float(time[:-3])
+        seconds = float(time[-2:])
+        seconds = seconds / 60.
+        line[2] = (15 * (4 - quarter)) + minutes + seconds
+  
+    data = pd.DataFrame(data).as_matrix()
 
+    X = data[:,:4]
+    y = data[:,5]
+
+    dt = tree.DecisionTreeClassifier(criterion="entropy",min_impurity_decrease=.01)
+    dt.fit(X,y)
+    
+    with open("tree.txt", "w") as f:
+        f = tree.export_graphviz(dt, out_file=f)
+   
+
+
+
+   
    # for instance in sys.stdin:
    #     instance = instance.rstrip()
    #     i = [x.strip() for x in instance.split()]
    #     testing_data.append(i)
 
-    h = entropy(data) 
+    #h = entropy(data)
