@@ -54,7 +54,7 @@ if __name__ == '__main__':
         quarter = quarters[i]
         # convert field position to distance from endzone
         if line[1] < 0:
-            line[1] = float(abs(line[1]) + 50)
+            line[1] = float((50 -abs(line[1])) + 50)
         # convert time to decimal as opposed to mm:ss
         time = line[2]
         minutes = float(time[:-3])
