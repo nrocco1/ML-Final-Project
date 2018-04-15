@@ -23,7 +23,7 @@ def find_dist(point, centroid):
 if __name__ == '__main__':
     filenames = ['punt.csv', 'field_goals.csv', 'off_plays.csv']
     
-    #data = [["Field_Pos","Yds_to_Gain","Time_Rem","Score_Diff","Pts_Next_Poss","Class"]]
+    data_headers = ["Field_Pos","Yds_to_Gain","Time_Rem","Score_Diff","Pts_Next_Poss","Class"]
     data = []
     relevant_stats = set([1,2,5,7,8,9])
     quarters = [0]
@@ -62,7 +62,9 @@ if __name__ == '__main__':
         seconds = seconds / 60.
         line[2] = (15 * (4 - quarter)) + minutes + seconds
   
-    data = pd.DataFrame(data).as_matrix()
+    data = pd.DataFrame(data, columns = data_headers)
+    X_headers = list(data)[:5]
+    data = data.as_matrix()
 
     X = data[:,:5]
     y = data[:,5]
@@ -71,7 +73,7 @@ if __name__ == '__main__':
     dt.fit(X,y)
     
     with open("tree.txt", "w") as f:
-        f = tree.export_graphviz(dt, out_file=f)
+        f = tree.export_graphviz(dt, out_file=f,feature_names=X_headers)
    
     km = cluster.KMeans(n_clusters=3)
     km.fit(X,y)
