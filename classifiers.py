@@ -23,7 +23,7 @@ def find_dist(point, centroid):
 if __name__ == '__main__':
     filenames = ['punt.csv', 'field_goals.csv', 'off_plays.csv']
     
-    data_headers = ["Field_Pos","Yds_to_Gain","Time_Rem","Score_Diff","Pts_Next_Poss","Class"]
+    data_headers = ["Yds_to_Gain","Field_Pos","Time_Rem","Score_Diff","Pts_Next_Poss","Class"]
     data = []
     relevant_stats = set([1,2,5,7,8,9])
     quarters = [0]
