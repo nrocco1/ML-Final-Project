@@ -170,8 +170,11 @@ if __name__ == '__main__':
 
     dt = tree.DecisionTreeClassifier(criterion="entropy",min_impurity_decrease=.01)
     dt.fit(X,y)
+
+    if yds_to_gain == None:
+        yds_to_gain = 'Overall'
     
-    with open("tree.txt", "w") as f:
+    with open("tree{}.txt".format(yds_to_gain), "w") as f:
         f = tree.export_graphviz(dt, out_file=f,feature_names=X_headers)
    
     km = cluster.KMeans(n_clusters=3)
