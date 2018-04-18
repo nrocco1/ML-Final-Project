@@ -83,7 +83,9 @@ if __name__ == '__main__':
     data = []
     relevant_stats = set([1,2,5,7,8,9])
     quarters = [0]
-    yds_to_gain = sys.argv[1]
+    yds_to_gain = None
+    if len(sys.argv) > 1:
+        yds_to_gain = int(sys.argv[1])
 
     for item in filenames:
         with open(item) as f:
@@ -109,8 +111,9 @@ if __name__ == '__main__':
     for line in data_full:
         if yds_to_gain >= 10:
             if line[0] >= 10:
-                print (line)
                 data.append(line)
+        elif yds_to_gain == None:
+            data.append(line)
         else:
             if line[0] == yds_to_gain:
                 data.append(line)
