@@ -100,9 +100,13 @@ if __name__ == '__main__':
     filenames = ['punt.csv', 'field_goals.csv', 'off_plays.csv']
 
     data_headers = ["Yds_to_Gain","Field_Pos","Time_Rem","Score_Diff","Pts_Next_Poss","Class"]
+    data_full = []
     data = []
     relevant_stats = set([1,2,5,7,8,9])
     quarters = [0]
+    yds_to_gain = None
+    if len(sys.argv) > 1:
+        yds_to_gain = int(sys.argv[1])
 
     for item in filenames:
         with open(item) as f:
@@ -123,7 +127,17 @@ if __name__ == '__main__':
                             l.append(float(line[i].strip()))
                         else:
                             l.append(line[i].strip())
-                data.append(l)
+                data_full.append(l)
+
+    for line in data_full:
+        if yds_to_gain >= 10:
+            if line[0] >= 10:
+                data.append(line)
+        elif yds_to_gain == None:
+            data.append(line)
+        else:
+            if line[0] == yds_to_gain:
+                data.append(line)
 
     for i in range(len(data)):
         line = data[i]
