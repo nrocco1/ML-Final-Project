@@ -10,6 +10,9 @@ import math
 import operator
 from sklearn import tree
 from sklearn import cluster
+from sklearn import metrics
+from sklearn import model_selection
+from sklearn import neighbors
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -58,13 +61,31 @@ def get_class_decision(field_pos, exp_pts_bins, counts_bins):
             return 3
         else:
             return None # all 3 have count 0
-    # if no class has majority, return class with highest expected points
+    # if no class has majority, return class with highest expected points, while also making sure that majority doesnt have 0 count
     if exp_pts_bins[b][0] > exp_pts_bins[b][1] and exp_pts_bins[b][0] > exp_pts_bins[b][2]:
-        return 1
+        if counts_bins[b][0] != 0:
+            return 1
+        else:
+            if exp_pts_bins[b][1] > exp_pts_bins[b][2]:
+                return 2
+            else:
+                return 3
     elif exp_pts_bins[b][1] > exp_pts_bins[b][0] and exp_pts_bins[b][1] > exp_pts_bins[b][2]:
-        return 2  
+        if counts_bins[b][1] != 0:
+            return 2
+        else:
+            if exp_pts_bins[b][0] > exp_pts_bins[b][2]:
+                return 1
+            else:
+                return 3
     elif exp_pts_bins[b][2] > exp_pts_bins[b][0] and exp_pts_bins[b][2] > exp_pts_bins[b][1]:
-        return 3
+        if counts_bins[b][2] != 0:
+            return 3
+        else:
+            if exp_pts_bins[b][0] > exp_pts_bins[b][1]:
+                return 1
+            else:
+                return 2
     else:
         return None
 
@@ -77,7 +98,7 @@ def find_dist(point, centroid):
 
 if __name__ == '__main__':
     filenames = ['punt.csv', 'field_goals.csv', 'off_plays.csv']
-    
+
     data_headers = ["Yds_to_Gain","Field_Pos","Time_Rem","Score_Diff","Pts_Next_Poss","Class"]
     data = []
     relevant_stats = set([1,2,5,7,8,9])
@@ -116,7 +137,7 @@ if __name__ == '__main__':
         seconds = float(time[-2:])
         seconds = seconds / 60.
         line[2] = (15 * (4 - quarter)) + minutes + seconds
-  
+
     data = pd.DataFrame(data, columns = data_headers)
     X_headers = list(data)[:5]
     data = data.as_matrix()
@@ -130,36 +151,46 @@ if __name__ == '__main__':
         exp_pts_bins[b] = [0,0,0]
         counts_bins[b] = [0,0,0]
         b += 5
-
-    # get the average points earned/lost after each play type in each bin
     for line in data:
         b = get_bin(line[1])
         Class = int(line[5] - 1)
         exp_pts_bins[b][Class] += line[4]
         counts_bins[b][Class] += 1
-
+    # get the average points earned/lost after each play type in each bin
     for b in exp_pts_bins.keys():
         for i in range(3):
             if counts_bins[b][i] != 0:
                 exp_pts_bins[b][i] /= float(counts_bins[b][i])
-  
-    cccc = 0
-    for line in data:
-        b = get_bin(line[1])
-        new_class = get_class_decision(b,exp_pts_bins,counts_bins)
-        if new_class != None: 
-            line[5] = new_class
-        #otherwise, class remains unchanged
-
     X = data[:,:5]
     y = data[:,5]
 
+    sss = model_selection.StratifiedShuffleSplit(n_splits = 1, test_size = .2)
+    #only generating one split but generator is returned, so for loop still needed
+    for train_index, test_index in sss.split(X,y):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+    num_misses = 0
+    #for i in range(len(X_test)):
+    #    b = get_bin(X_test[i][1])
+    #    new_class = get_class_decision(b,exp_pts_bins,counts_bins)
+    #    if new_class != None:
+    #        y_test[i] = new_class
+    #    else:
+    #        num_misses += 1
+    #print num_misses
+
     dt = tree.DecisionTreeClassifier(criterion="entropy",min_impurity_decrease=.01)
-    dt.fit(X,y)
-    
+    dt.fit(X_train,y_train)
+    y_pred = dt.predict(X_test)
+    print "DECISION TREE"
+    print "ACCURACY\tF1"
+    print "{}\t{}".format(metrics.accuracy_score(y_test,y_pred), metrics.f1_score(y_test,y_pred,average='micro'))
+    print""
+
     with open("tree.txt", "w") as f:
         f = tree.export_graphviz(dt, out_file=f,feature_names=X_headers)
-   
+
     km = cluster.KMeans(n_clusters=3)
     km.fit(X,y)
 
@@ -172,14 +203,14 @@ if __name__ == '__main__':
         d1 = find_dist(point,km.cluster_centers_[0])
         d2 = find_dist(point,km.cluster_centers_[1])
         d3 = find_dist(point,km.cluster_centers_[2])
-  
+
         if d1 < d2 and d1 < d3:
             cluster1.add(i)
         elif d2 < d1 and d2 < d3:
             cluster2.add(i)
         else:
             cluster3.add(i)
-    
+
     cluster1_counts = [0,0,0]
     cluster2_counts = [0,0,0]
     cluster3_counts = [0,0,0]
@@ -187,7 +218,7 @@ if __name__ == '__main__':
     for i in range(len(y)):
         if i in cluster1:
             cluster1_counts[int(y[i]-1)] += 1
-        elif i in cluster2:           
+        elif i in cluster2:
             cluster2_counts[int(y[i]-1)] += 1
         else:
             cluster3_counts[int(y[i]-1)] += 1
@@ -195,4 +226,11 @@ if __name__ == '__main__':
     print cluster1_counts
     print cluster2_counts
     print cluster3_counts
+    print ""
 
+    knn = neighbors.KNeighborsClassifier(n_neighbors = 10)
+    knn.fit(X_train,y_train)
+    y_pred = knn.predict(X_test)
+    print "K-NEAREST NEIGHBORS"
+    print "ACCURACY\tF-SCORE"
+    print "{}\t{}".format(metrics.accuracy_score(y_test,y_pred), metrics.f1_score(y_test,y_pred,average='micro'))
