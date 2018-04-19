@@ -8,6 +8,7 @@ import os
 import string
 import math
 import operator
+import numpy as np
 from sklearn import tree
 from sklearn import cluster
 from sklearn import metrics
@@ -178,32 +179,62 @@ if __name__ == '__main__':
     X = data[:,:5]
     y = data[:,5]
 
-    sss = model_selection.StratifiedShuffleSplit(n_splits = 1, test_size = .2)
-    #only generating one split but generator is returned, so for loop still needed
-    for train_index, test_index in sss.split(X,y):
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-
-    num_misses = 0
     #for i in range(len(X_test)):
     #    b = get_bin(X_test[i][1])
     #    new_class = get_class_decision(b,exp_pts_bins,counts_bins)
     #    if new_class != None:
     #        y_test[i] = new_class
-    #    else:
-    #        num_misses += 1
-    #print num_misses
+
+    dt_errors = []
+    knn_errors = []
 
     dt = tree.DecisionTreeClassifier(criterion="entropy",min_impurity_decrease=.01)
-    dt.fit(X_train,y_train)
-    y_pred = dt.predict(X_test)
-    print "DECISION TREE"
-    print "ACCURACY\tF1"
-    print "{}\t{}".format(metrics.accuracy_score(y_test,y_pred), metrics.f1_score(y_test,y_pred,average='micro'))
-    print""
+    knn = neighbors.KNeighborsClassifier(n_neighbors = 10)
 
-    with open("tree.txt", "w") as f:
-        f = tree.export_graphviz(dt, out_file=f,feature_names=X_headers)
+    skf = model_selection.StratifiedKFold(n_splits = 10)
+    #only generating one split but generator is returned, so for loop still needed
+    for train_index, test_index in skf.split(X,y):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+        dt.fit(X_train,y_train)
+        knn.fit(X_train,y_train)
+        dt_pred = dt.predict(X_test)
+        knn_pred = knn.predict(X_test)
+        dt_errors.append(1-metrics.accuracy_score(y_test,dt_pred))
+        knn_errors.append(1-metrics.accuracy_score(y_test,knn_pred))
+
+    print "Decision Tree Error Scores:"
+    for e in dt_errors:
+        print "%0.3f" % e
+    print ""
+    print "Mean = %0.3f" % float(np.mean(dt_errors,axis=0))
+    print "Standard Deviation = %0.3f" % float(np.std(dt_errors,axis=0))
+    print ""
+
+    print "10-Nearest Neigbors Error Scores"
+    for e in knn_errors:
+        print "%0.3f" % e
+    print ""
+    print "Mean = %0.3f" % float(np.mean(knn_errors,axis=0))
+    print "Standard Deviation = %0.3f" % float(np.std(knn_errors,axis=0))
+    print ""
+
+    T = 1.83
+    ED = [] # ED = Error Differences
+    for i in range(10):
+    	ED.append(dt_errors[i] - knn_errors[i])
+    ED_mean = float(sum(ED)) / float(len(ED))
+    ED = map(lambda x: x - ED_mean, ED)
+    ED = map(lambda x: pow(x,2), ED)
+    S = float(pow(sum(ED) / 90., .5))
+    T_prime = ED_mean / S
+
+    print "For a 95% confidence interval, we use t = 1.83"
+    print "Using error as our metric, we get t' = %0.2f" % T_prime
+    print ""
+
+    #with open("tree.txt", "w") as f:
+    #    f = tree.export_graphviz(dt, out_file=f,feature_names=X_headers)
 
     km = cluster.KMeans(n_clusters=3)
     km.fit(X,y)
@@ -241,10 +272,3 @@ if __name__ == '__main__':
     print cluster2_counts
     print cluster3_counts
     print ""
-
-    knn = neighbors.KNeighborsClassifier(n_neighbors = 10)
-    knn.fit(X_train,y_train)
-    y_pred = knn.predict(X_test)
-    print "K-NEAREST NEIGHBORS"
-    print "ACCURACY\tF-SCORE"
-    print "{}\t{}".format(metrics.accuracy_score(y_test,y_pred), metrics.f1_score(y_test,y_pred,average='micro'))
