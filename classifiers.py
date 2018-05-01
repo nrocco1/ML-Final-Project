@@ -154,7 +154,7 @@ if __name__ == '__main__':
         line[2] = (15 * (4 - quarter)) + minutes + seconds
 
     data = pd.DataFrame(data, columns = data_headers)
-    X_headers = list(data)[:5]
+    X_headers = list(data)[:4]
     data = data.as_matrix()
 
     # create dictionary of 5 yard bins for every possible field position
@@ -176,7 +176,7 @@ if __name__ == '__main__':
         for i in range(3):
             if counts_bins[b][i] != 0:
                 exp_pts_bins[b][i] /= float(counts_bins[b][i])
-    X = data[:,:5]
+    X = data[:,:4]
     y = data[:,5]
 
     #for i in range(len(X_test)):
@@ -233,8 +233,11 @@ if __name__ == '__main__':
     print "Using error as our metric, we get t' = %0.2f" % T_prime
     print ""
 
-    #with open("tree.txt", "w") as f:
-    #    f = tree.export_graphviz(dt, out_file=f,feature_names=X_headers)
+    if yds_to_gain == None:
+        yds_to_gain = 'Overall'
+
+    with open("tree{}.txt".format(yds_to_gain), "w") as f:
+        f = tree.export_graphviz(dt, out_file=f,feature_names=X_headers)
 
     km = cluster.KMeans(n_clusters=3)
     km.fit(X,y)
