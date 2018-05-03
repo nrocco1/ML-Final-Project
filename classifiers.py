@@ -179,11 +179,11 @@ if __name__ == '__main__':
     X = data[:,:4]
     y = data[:,5]
 
-    #for i in range(len(X_test)):
-    #    b = get_bin(X_test[i][1])
-    #    new_class = get_class_decision(b,exp_pts_bins,counts_bins)
-    #    if new_class != None:
-    #        y_test[i] = new_class
+    for i in range(len(X)):
+        b = get_bin(X[i][1])
+        new_class = get_class_decision(b,exp_pts_bins,counts_bins)
+        if new_class != None:
+            y[i] = new_class
 
     dt_errors = []
     knn_errors = []
